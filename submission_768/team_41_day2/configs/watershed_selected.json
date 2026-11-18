@@ -1,0 +1,10 @@
+{
+  "foreground": 0.3,
+  "boundary": 0.2,
+  "min_area": 108,
+  "min_marker": 72,
+  "marker_separation": 36,
+  "final_min_area": 1,
+  "peak_prominence": 3.0,
+  "peak_separation": 24
+}

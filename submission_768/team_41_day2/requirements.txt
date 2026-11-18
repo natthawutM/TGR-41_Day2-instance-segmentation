@@ -1,0 +1,6 @@
+numpy
+opencv-python-headless
+onnxruntime
+Pillow
+scipy
+scikit-image

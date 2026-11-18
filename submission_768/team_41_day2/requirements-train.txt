@@ -1,0 +1,5 @@
+-r requirements.txt
+pycocotools
+torch
+torchvision
+onnx
