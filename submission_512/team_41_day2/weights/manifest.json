@@ -1,0 +1,41 @@
+{
+  "classes": [
+    "black",
+    "broken",
+    "good",
+    "husk",
+    "immature",
+    "parchment",
+    "shell"
+  ],
+  "classifier_size": 224,
+  "classifier_preprocessing": {
+    "mode": "day1",
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "classifier": "classifier.onnx",
+  "watershed": {
+    "foreground": 0.5,
+    "boundary": 0.3,
+    "min_area": 48,
+    "min_marker": 32,
+    "marker_separation": 24,
+    "final_min_area": 1
+  },
+  "smoke": false,
+  "variants": {
+    "fp32_512": {
+      "file": "seg_fp32_512.onnx",
+      "size": 512
+    }
+  }
+}
