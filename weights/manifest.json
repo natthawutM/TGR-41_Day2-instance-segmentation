@@ -36,6 +36,14 @@
     "fp32_512": {
       "file": "seg_fp32_512.onnx",
       "size": 512
+    },
+    "fp32_384": {
+      "file": "seg_fp32_384.onnx",
+      "size": 384
+    },
+    "fp32_320": {
+      "file": "seg_fp32_320.onnx",
+      "size": 320
     }
   }
 }
