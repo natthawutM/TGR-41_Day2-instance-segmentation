@@ -44,6 +44,47 @@
     "fp32_320": {
       "file": "seg_fp32_320.onnx",
       "size": 320
+    },
+    "fp32_512_tuned": {
+      "file": "seg_fp32_512.onnx",
+      "size": 512,
+      "tta_passes": 1,
+      "watershed": {
+        "foreground": 0.4,
+        "boundary": 0.3,
+        "min_area": 48,
+        "min_marker": 32,
+        "marker_separation": 24,
+        "final_min_area": 1,
+        "peak_prominence": 2.0,
+        "peak_separation": 16
+      }
+    },
+    "fp32_640_flip2": {
+      "file": "seg_fp32_640.onnx",
+      "size": 640,
+      "tta_passes": 2,
+      "watershed": {
+        "foreground": 0.36,
+        "boundary": 0.16,
+        "min_area": 75,
+        "min_marker": 50,
+        "marker_separation": 15,
+        "final_min_area": 1
+      }
+    },
+    "fp32_512_flip4": {
+      "file": "seg_fp32_512.onnx",
+      "size": 512,
+      "tta_passes": 4,
+      "watershed": {
+        "foreground": 0.38,
+        "boundary": 0.12,
+        "min_area": 48,
+        "min_marker": 32,
+        "marker_separation": 24,
+        "final_min_area": 1
+      }
     }
   }
 }

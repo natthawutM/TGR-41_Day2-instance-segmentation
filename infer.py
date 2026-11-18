@@ -21,6 +21,10 @@ class Predictor:
         self.weights = Path(weights)
         self.manifest = json.loads((self.weights / 'manifest.json').read_text())
         self.variant = self.manifest['variants'][variant]
+        self.watershed = self.variant.get('watershed', self.manifest['watershed'])
+        self.tta_passes = self.variant.get('tta_passes', 1)
+        if self.tta_passes not in (1, 2, 4):
+            raise ValueError('tta_passes must be 1, 2, or 4')
         self.classes = self.manifest['classes']
         self.size = self.variant['size']
         options = ort.SessionOptions()
@@ -51,8 +55,22 @@ class Predictor:
 
     def predict_instances(self, image):
         canvas, box = letterbox(image, self.size)
-        logits = self.segmenter.run(None, {'image': normalize(canvas)[None]})[0][0]
-        labels = instances_from_logits(logits, box, image.shape[:2], self.manifest['watershed'])
+        model_input = normalize(canvas)[None]
+        logits = self.segmenter.run(None, {'image': model_input})[0][0]
+        passes = self.tta_passes
+        if passes >= 2:
+            flipped_input = np.ascontiguousarray(model_input[..., ::-1])
+            flipped_logits = self.segmenter.run(None, {'image': flipped_input})[0][0][..., ::-1]
+            logits = logits + flipped_logits
+        if passes == 4:
+            vertical_input = np.ascontiguousarray(model_input[..., ::-1, :])
+            both_input = np.ascontiguousarray(model_input[..., ::-1, ::-1])
+            vertical = self.segmenter.run(None, {'image': vertical_input})[0][0][..., ::-1, :]
+            both = self.segmenter.run(None, {'image': both_input})[0][0][..., ::-1, ::-1]
+            logits = logits + (vertical + both)
+        if passes > 1:
+            logits /= passes
+        labels = instances_from_logits(logits, box, image.shape[:2], self.watershed)
         classes = []
         regions = [(i, box, labels[box] == i) for i, box in enumerate(find_objects(labels), 1) if box is not None]
         for start in range(0, len(regions), 16):

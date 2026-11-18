@@ -10,8 +10,8 @@ def instances_from_logits(logits, box, shape, settings, debug=False):
     y, x, h, w = box
     fg_prob, boundary = 1 / (1 + np.exp(-np.clip(logits[:, y:y+h, x:x+w], -40, 40)))
     fg = (fg_prob >= settings['foreground']).astype(np.uint8)
-    count, components, stats, _ = cv2.connectedComponentsWithStats(fg, connectivity=8)
-    allowed = stats[:, cv2.CC_STAT_AREA] >= settings['min_area']
+    count, components, stats_component, _ = cv2.connectedComponentsWithStats(fg, connectivity=8)
+    allowed = stats_component[:, cv2.CC_STAT_AREA] >= settings['min_area']
     allowed[0] = False
     fg = allowed[components]
     dist = cv2.distanceTransform(np.pad(fg.astype(np.uint8), 1), cv2.DIST_L2, 5)[1:-1, 1:-1]
@@ -38,6 +38,40 @@ def instances_from_logits(logits, box, shape, settings, debug=False):
         if allowed[label] and label not in seeded:
             peak = np.argmax(np.where(components == label, dist, -1))
             markers.flat[peak] = next_id
+            next_id += 1
+    prominence = settings.get('peak_prominence', 0)
+    if prominence:
+        from skimage.morphology import h_maxima
+
+        for label in np.flatnonzero(allowed):
+            x, y, cw, ch, _ = stats_component[label]
+            region = np.s_[y:y+ch, x:x+cw]
+            in_component = components[region] == label
+            local_markers = markers[region]
+            existing = np.unique(local_markers[in_component & (local_markers > 0)])
+            if len(existing) != 1:
+                continue
+            distance = np.where(in_component, dist[region], 0)
+            if distance.max() <= prominence:
+                continue
+            peaks = h_maxima(np.pad(distance, 1), prominence)[1:-1, 1:-1]
+            n, _, _, points = cv2.connectedComponentsWithStats(peaks.astype(np.uint8))
+            centers = []
+            for px, py in points[1:n]:
+                iy, ix = round(py), round(px)
+                if in_component[iy, ix] and distance[iy, ix] >= .50 * distance.max():
+                    centers.append((iy, ix))
+            if len(centers) < 2:
+                continue
+            centers.sort(key=lambda p: float(distance[p]), reverse=True)
+            first = np.array(centers[0])
+            second = next((p for p in centers[1:] if np.linalg.norm(first-p) >=
+                           settings.get('peak_separation', 16)), None)
+            if second is None:
+                continue
+            local_markers[in_component] = 0
+            local_markers[tuple(first)] = existing[0]
+            local_markers[second] = next_id
             next_id += 1
     elevation = boundary - dist / max(float(dist.max()), 1)
     labels = watershed(elevation, markers, mask=fg, connectivity=2)
