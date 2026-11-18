@@ -91,17 +91,25 @@ def crop(image, mask, masked=True):
 
 
 def overlay(image, instances):
+    full_image = (slice(None), slice(None))
+    return overlay_regions(image, ((i, label, full_image, mask) for i, label, mask in instances))
+
+
+def overlay_regions(image, instances):
     result = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     captions = []
-    for instance_id, label, mask in instances:
+    for instance_id, label, region, mask in instances:
         if not mask.any():
             continue
         color = tuple(int(c) for c in np.random.default_rng(instance_id).integers(50, 255, 3))
-        result[mask] = (result[mask] * .65 + np.asarray(color) * .35).astype(np.uint8)
-        contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        patch = result[region]
+        patch[mask] = (patch[mask] * .65 + np.asarray(color) * .35).astype(np.uint8)
+        oy, ox = (part.start or 0 for part in region)
+        contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE,
+                                       offset=(ox, oy))
         cv2.drawContours(result, contours, -1, color, 1)
         y, x = np.where(mask)
-        pos = (int(x.mean()), int(y.mean()))
+        pos = (int(x.mean()) + ox, int(y.mean()) + oy)
         captions.append((str(label), pos, color))
     placed = []
     for label, (x, y), color in captions:
