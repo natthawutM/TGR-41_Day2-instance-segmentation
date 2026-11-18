@@ -1,0 +1,9 @@
+{
+  "seed": 41,
+  "size": 512,
+  "batch": 4,
+  "epochs": 40,
+  "lr": 0.0005,
+  "amp": false,
+  "copy_paste": 0.2
+}
